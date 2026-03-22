@@ -1,4 +1,4 @@
-# Express Backend API
+# Messaging App Backend API
 
 - Express
 - PostgreSQL
@@ -7,3 +7,5 @@
 - Prisma
 - REST API
 - Jest & Supertest
+
+Frontend project available at https://github.com/See-Monkey/messenger-frontend

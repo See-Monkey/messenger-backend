@@ -1,5 +1,5 @@
 {
-	"name": "template-express-api",
+	"name": "messaging-app",
 	"version": "1.0.0",
 	"type": "module",
 	"description": "Express PostgreSQL Passport JWT Prisma REST",
