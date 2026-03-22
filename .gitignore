@@ -1,0 +1,5 @@
+node_modules
+.env
+.env.test
+todo.md
+generated/prisma
