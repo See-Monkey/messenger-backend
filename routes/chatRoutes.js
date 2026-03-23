@@ -18,7 +18,7 @@ router.post("/", requireAuth, chatController.createChat);
 router.post("/:chatId/users", requireAuth, chatController.addUser);
 
 // Leave chat
-router.delete("/:chatId/users/me", requireAuth, chatController.removeUser);
+router.delete("/:chatId/users/me", requireAuth, chatController.removeMe);
 
 // Add message to chat
 router.post("/:chatId/messages", requireAuth, messageController.createMessage);
