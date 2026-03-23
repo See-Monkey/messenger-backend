@@ -25,6 +25,22 @@ export const validateUser = [
 	body("lastName").trim().notEmpty().withMessage("Last name is required"),
 ];
 
+export const validateRegister = [];
+
+export const validateLogin = [];
+
+export const validateUpdateProfile = [];
+
+export const validateChangePassword = [];
+
+export const validateCreateChat = [];
+
+export const validateEditChat = [];
+
+export const validateCreateMessage = [];
+
+export const validateUpdateMessage = [];
+
 export function handleValidationErrors(view) {
 	return (req, res, next) => {
 		const errors = validationResult(req);
