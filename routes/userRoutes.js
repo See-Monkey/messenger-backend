@@ -1,17 +1,20 @@
 import { Router } from "express";
-import { requireAuth, requireAdmin } from "../middleware/auth.js";
+import requireAuth from "../middleware/auth.js";
 import userController from "../controllers/userController.js";
 
 const router = Router();
 
+// Get my account
 router.get("/me", requireAuth, userController.getMe);
+
+// Update my account
 router.patch("/me", requireAuth, userController.updateMe);
 router.patch("/me/password", requireAuth, userController.changeMyPassword);
 
-router.get("/", requireAdmin, userController.getAllUsers);
+// Delete my account
+router.delete("/me", requireAuth, userController.deleteMe);
 
-router.get("/:id", userController.getPublicProfile);
-
-router.delete("/:id", requireAdmin, userController.deleteUser);
+// Get profile
+router.get("/:userId", requireAuth, userController.getProfile);
 
 export default router;

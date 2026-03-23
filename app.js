@@ -3,8 +3,10 @@ import express from "express";
 import cors from "cors";
 import passport from "passport";
 import { configurePassport } from "./config/passport.js";
-import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
+import messageRoutes from "./routes/messageRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 const app = express();
@@ -35,6 +37,8 @@ app.get("/", (req, res) => {
 // custom routers
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/chats", chatRoutes);
+app.use("/api/messages", messageRoutes);
 
 // 404 for no routes found
 app.use((req, res) => {

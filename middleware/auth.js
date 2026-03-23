@@ -10,14 +10,4 @@ const requireAuth = (req, res, next) => {
 	})(req, res, next);
 };
 
-const requireAdmin = [
-	requireAuth,
-	(req, res, next) => {
-		if (req.user.role !== "ADMIN") {
-			return res.status(403).json({ message: "Forbidden" });
-		}
-		next();
-	},
-];
-
-export { requireAuth, requireAdmin };
+export default requireAuth;

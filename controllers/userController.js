@@ -25,7 +25,7 @@ async function changeMyPassword(req, res, next) {
 	}
 }
 
-async function getPublicProfile(req, res, next) {
+async function getProfile(req, res, next) {
 	try {
 		const user = await userService.findPublicById(req.params.id);
 		if (!user) return res.status(404).json({ message: "User not found" });
@@ -35,18 +35,8 @@ async function getPublicProfile(req, res, next) {
 	}
 }
 
-// admin only
-async function getAllUsers(req, res, next) {
-	try {
-		const users = await userService.getAll();
-		res.json(users);
-	} catch (err) {
-		next(err);
-	}
-}
-
-// admin only
-async function deleteUser(req, res, next) {
+// Delete my account
+async function deleteMe(req, res, next) {
 	try {
 		await userService.remove(req.params.id);
 		res.status(204).end();
@@ -59,7 +49,6 @@ export default {
 	getMe,
 	updateMe,
 	changeMyPassword,
-	getPublicProfile,
-	getAllUsers,
-	deleteUser,
+	getProfile,
+	deleteMe,
 };
