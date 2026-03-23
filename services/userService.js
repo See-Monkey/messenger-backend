@@ -2,61 +2,108 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../config/prisma.js";
 
 // Create a new user
-async function create({ username, password, firstname, lastname, avatarUrl }) {
+async function create({
+	username,
+	password,
+	displayName,
+	avatarUrl,
+	themeColor,
+}) {
 	const hashedPassword = await bcrypt.hash(password, 10);
 
 	const user = await prisma.user.create({
 		data: {
 			username,
 			password: hashedPassword,
-			firstname,
-			lastname,
-			role: "USER",
+			displayName,
 			avatarUrl,
+			themeColor,
 		},
 	});
 
 	return sanitizeUser(user);
 }
 
-// Find user by username - Internal
+// Internal: find by username
 async function findByUsername(username) {
 	return prisma.user.findUnique({
 		where: { username },
 	});
 }
 
-// Find by user ID - Internal
+// Internal: find by id
 async function findById(id) {
 	return prisma.user.findUnique({
 		where: { id },
 	});
 }
 
-// Find sanitized user for profile display
+// Public profile
 async function findPublicById(id) {
 	return prisma.user.findUnique({
 		where: { id },
 		select: {
 			id: true,
 			username: true,
-			firstname: true,
-			lastname: true,
+			displayName: true,
 			avatarUrl: true,
+			themeColor: true,
 			createdAt: true,
 		},
 	});
 }
 
-// Validate user password
+// Search users (for chat creation)
+async function searchUsers({ query, currentUserId, limit = 15 }) {
+	const safeLimit = Math.min(limit, 20);
+
+	const users = await prisma.user.findMany({
+		where: {
+			AND: [
+				{
+					OR: [
+						{
+							username: {
+								contains: query,
+								mode: "insensitive",
+							},
+						},
+						{
+							displayName: {
+								contains: query,
+								mode: "insensitive",
+							},
+						},
+					],
+				},
+				{
+					NOT: {
+						id: currentUserId,
+					},
+				},
+			],
+		},
+		take: safeLimit,
+		select: {
+			id: true,
+			username: true,
+			displayName: true,
+			avatarUrl: true,
+			themeColor: true,
+		},
+	});
+
+	return users;
+}
+
+// Validate password
 async function validatePassword(user, password) {
 	return bcrypt.compare(password, user.password);
 }
 
-// Update user data
+// Update user
 async function update(id, data) {
-	// Whitelist allowed fields
-	const allowedFields = ["firstname", "lastname", "avatarUrl"];
+	const allowedFields = ["displayName", "avatarUrl", "themeColor"];
 
 	const filteredData = Object.fromEntries(
 		Object.entries(data).filter(([key]) => allowedFields.includes(key)),
@@ -70,7 +117,7 @@ async function update(id, data) {
 	return sanitizeUser(user);
 }
 
-// Change Password
+// Change password
 async function changePassword(id, currentPassword, newPassword) {
 	const user = await findById(id);
 	if (!user) throw new Error("User not found");
@@ -90,28 +137,14 @@ async function changePassword(id, currentPassword, newPassword) {
 
 // Delete user
 async function remove(id) {
-	const user = await prisma.user.delete({
+	await prisma.user.delete({
 		where: { id },
 	});
 
-	return sanitizeUser(user);
+	return;
 }
 
-// Get all users
-async function getAll() {
-	return prisma.user.findMany({
-		select: {
-			id: true,
-			username: true,
-			firstname: true,
-			lastname: true,
-			role: true,
-			createdAt: true,
-		},
-	});
-}
-
-// Remove password field before returning user
+// Sanitize user (remove password)
 function sanitizeUser(user) {
 	if (!user) return null;
 	const { password, ...safeUser } = user;
@@ -123,10 +156,10 @@ export default {
 	findByUsername,
 	findById,
 	findPublicById,
+	searchUsers,
 	validatePassword,
 	update,
 	changePassword,
 	remove,
-	getAll,
 	sanitizeUser,
 };
