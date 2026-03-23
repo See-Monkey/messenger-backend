@@ -20,6 +20,22 @@ async function getChats(req, res, next) {
 	}
 }
 
+async function createChat(req, res, next) {
+	try {
+		const { userIds = [], name } = req.body;
+
+		const chat = await chatService.createChat({
+			currentUserId: req.user.id,
+			userIds,
+			name,
+		});
+
+		res.status(201).json(chat);
+	} catch (err) {
+		next(err);
+	}
+}
+
 async function getChatById(req, res, next) {
 	try {
 		const { chatId } = req.params;
@@ -48,17 +64,17 @@ async function getChatById(req, res, next) {
 	}
 }
 
-async function createChat(req, res, next) {
+async function editChat(req, res, next) {
 	try {
-		const { userIds = [], name } = req.body;
+		const { chatId } = req.params;
+		const { name } = req.body;
 
-		const chat = await chatService.createChat({
-			currentUserId: req.user.id,
-			userIds,
+		const updatedChat = await chatService.editChat({
+			chatId,
 			name,
 		});
 
-		res.status(201).json(chat);
+		res.json(updatedChat);
 	} catch (err) {
 		next(err);
 	}
@@ -98,8 +114,9 @@ async function removeMe(req, res, next) {
 
 export default {
 	getChats,
-	getChatById,
 	createChat,
+	getChatById,
+	editChat,
 	addUser,
 	removeMe,
 };

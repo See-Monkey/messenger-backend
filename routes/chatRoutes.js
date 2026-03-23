@@ -8,11 +8,14 @@ const router = Router();
 // Get all chats for user
 router.get("/", requireAuth, chatController.getChats);
 
+// Create new chat
+router.post("/", requireAuth, chatController.createChat);
+
 // Get chat by ID
 router.get("/:chatId", requireAuth, chatController.getChatById);
 
-// Create new chat
-router.post("/", requireAuth, chatController.createChat);
+// Rename chat
+router.patch("/:chatId", requireAuth, chatController.editChat);
 
 // Add user to chat
 router.post("/:chatId/users", requireAuth, chatController.addUser);

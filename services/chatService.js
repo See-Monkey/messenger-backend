@@ -36,6 +36,40 @@ async function getUserChats(userId, { cursor, limit = 20 }) {
 	});
 }
 
+async function createChat({ currentUserId, userIds = [], name }) {
+	// ensure creator is included
+	const uniqueUserIds = [...new Set([currentUserId, ...userIds])];
+
+	const isGroup = uniqueUserIds.length > 2;
+
+	return prisma.chat.create({
+		data: {
+			name: isGroup ? name : null,
+			isGroup,
+			createdById: currentUserId,
+			chatMembers: {
+				create: uniqueUserIds.map((userId) => ({
+					userId,
+				})),
+			},
+		},
+		include: {
+			chatMembers: {
+				include: {
+					user: {
+						select: {
+							id: true,
+							username: true,
+							displayName: true,
+							avatarUrl: true,
+						},
+					},
+				},
+			},
+		},
+	});
+}
+
 async function getChatById(chatId, userId, { cursor, limit = 50 }) {
 	const chat = await prisma.chat.findFirst({
 		where: {
@@ -71,38 +105,17 @@ async function getChatById(chatId, userId, { cursor, limit = 50 }) {
 	return chat;
 }
 
-async function createChat({ currentUserId, userIds = [], name }) {
-	// ensure creator is included
-	const uniqueUserIds = [...new Set([currentUserId, ...userIds])];
+export async function editChat({ chatId, name }) {
+	if (!name || name.trim() === "") {
+		throw new Error("Chat name cannot be empty");
+	}
 
-	const isGroup = uniqueUserIds.length > 2;
-
-	return prisma.chat.create({
-		data: {
-			name: isGroup ? name : null,
-			isGroup,
-			createdById: currentUserId,
-			chatMembers: {
-				create: uniqueUserIds.map((userId) => ({
-					userId,
-				})),
-			},
-		},
-		include: {
-			chatMembers: {
-				include: {
-					user: {
-						select: {
-							id: true,
-							username: true,
-							displayName: true,
-							avatarUrl: true,
-						},
-					},
-				},
-			},
-		},
+	const updatedChat = await prisma.chat.update({
+		where: { id: chatId },
+		data: { name },
 	});
+
+	return updatedChat;
 }
 
 async function addUserToChat({ chatId, currentUserId, userIdToAdd }) {
