@@ -25,6 +25,35 @@ async function changeMyPassword(req, res, next) {
 	}
 }
 
+async function deleteMe(req, res, next) {
+	try {
+		await userService.remove(req.user.id);
+		res.status(204).end();
+	} catch (err) {
+		next(err);
+	}
+}
+
+async function searchUsers(req, res, next) {
+	try {
+		const { search } = req.query;
+
+		if (!search || typeof search !== "string") {
+			return res.status(400).json({ message: "Search query is required" });
+		}
+
+		const users = await userService.searchUsers({
+			query: search.trim(),
+			currentUserId: req.user.id,
+			limit: 15,
+		});
+
+		res.json(users);
+	} catch (err) {
+		next(err);
+	}
+}
+
 async function getProfile(req, res, next) {
 	try {
 		const user = await userService.findPublicById(req.params.id);
@@ -35,20 +64,11 @@ async function getProfile(req, res, next) {
 	}
 }
 
-// Delete my account
-async function deleteMe(req, res, next) {
-	try {
-		await userService.remove(req.params.id);
-		res.status(204).end();
-	} catch (err) {
-		next(err);
-	}
-}
-
 export default {
 	getMe,
 	updateMe,
 	changeMyPassword,
+	searchUsers,
 	getProfile,
 	deleteMe,
 };

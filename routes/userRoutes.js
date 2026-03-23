@@ -14,6 +14,9 @@ router.patch("/me/password", requireAuth, userController.changeMyPassword);
 // Delete my account
 router.delete("/me", requireAuth, userController.deleteMe);
 
+// Search users
+router.get("/", requireAuth, userController.searchUsers);
+
 // Get profile
 router.get("/:userId", requireAuth, userController.getProfile);
 
