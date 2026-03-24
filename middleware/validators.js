@@ -1,5 +1,6 @@
 import { body, validationResult } from "express-validator";
 
+// this one is just an example, delete later:
 export const validateUser = [
 	body("username") // assuming username is email address
 		.trim()

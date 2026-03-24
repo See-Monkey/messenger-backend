@@ -56,7 +56,8 @@ async function searchUsers(req, res, next) {
 
 async function getProfile(req, res, next) {
 	try {
-		const user = await userService.findPublicById(req.params.id);
+		const user = await userService.findPublicById(req.params.userId);
+
 		if (!user) return res.status(404).json({ message: "User not found" });
 		res.json(user);
 	} catch (err) {

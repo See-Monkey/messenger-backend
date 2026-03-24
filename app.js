@@ -28,7 +28,7 @@ app.use(passport.initialize());
 // Health check
 app.get("/", (req, res) => {
 	res.json({
-		name: "messenger",
+		name: "Messenger API",
 		version: "1.0.0",
 		status: "OK",
 	});

@@ -70,7 +70,7 @@ async function createChat({ currentUserId, userIds = [], name }) {
 	});
 }
 
-async function getChatById(chatId, userId, { cursor, limit = 50 }) {
+async function getChatById(chatId, userId, { cursor, limit = 50 } = {}) {
 	const chat = await prisma.chat.findFirst({
 		where: {
 			id: chatId,
@@ -105,7 +105,7 @@ async function getChatById(chatId, userId, { cursor, limit = 50 }) {
 	return chat;
 }
 
-export async function editChat({ chatId, name }) {
+async function editChat({ chatId, name }) {
 	if (!name || name.trim() === "") {
 		throw new Error("Chat name cannot be empty");
 	}
@@ -119,7 +119,6 @@ export async function editChat({ chatId, name }) {
 }
 
 async function addUserToChat({ chatId, currentUserId, userIdToAdd }) {
-	// ensure current user is in chat
 	const membership = await prisma.chatMember.findUnique({
 		where: {
 			userId_chatId: {
@@ -133,18 +132,31 @@ async function addUserToChat({ chatId, currentUserId, userIdToAdd }) {
 		throw new Error("Not authorized to modify this chat");
 	}
 
-	// add user (will fail if already exists due to unique constraint)
-	await prisma.chatMember.create({
-		data: {
+	await prisma.chatMember.upsert({
+		where: {
+			userId_chatId: {
+				userId: userIdToAdd,
+				chatId,
+			},
+		},
+		update: {},
+		create: {
 			chatId,
 			userId: userIdToAdd,
 		},
 	});
 
-	// update chat timestamp
+	// count members
+	const memberCount = await prisma.chatMember.count({
+		where: { chatId },
+	});
+
 	await prisma.chat.update({
 		where: { id: chatId },
-		data: { updatedAt: new Date() },
+		data: {
+			updatedAt: new Date(),
+			isGroup: memberCount > 2,
+		},
 	});
 
 	return getChatById(chatId, currentUserId);
@@ -160,13 +172,24 @@ async function removeUserFromChat({ chatId, userId }) {
 		},
 	});
 
-	return;
+	const memberCount = await prisma.chatMember.count({
+		where: { chatId },
+	});
+
+	await prisma.chat.update({
+		where: { id: chatId },
+		data: {
+			isGroup: memberCount > 2,
+			updatedAt: new Date(),
+		},
+	});
 }
 
 export default {
 	getUserChats,
 	getChatById,
 	createChat,
+	editChat,
 	addUserToChat,
 	removeUserFromChat,
 };
