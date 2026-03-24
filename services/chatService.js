@@ -106,6 +106,19 @@ async function getChatById(chatId, userId, { cursor, limit = 50 } = {}) {
 }
 
 async function editChat({ chatId, name }) {
+	const membership = await prisma.chatMember.findUnique({
+		where: {
+			userId_chatId: {
+				userId: currentUserId,
+				chatId,
+			},
+		},
+	});
+
+	if (!membership) {
+		throw new Error("Not authorized to modify this chat");
+	}
+
 	if (!name || name.trim() === "") {
 		throw new Error("Chat name cannot be empty");
 	}
@@ -163,6 +176,19 @@ async function addUserToChat({ chatId, currentUserId, userIdToAdd }) {
 }
 
 async function removeUserFromChat({ chatId, userId }) {
+	const membership = await prisma.chatMember.findUnique({
+		where: {
+			userId_chatId: {
+				userId,
+				chatId,
+			},
+		},
+	});
+
+	if (!membership) {
+		throw new Error("Not authorized to modify this chat");
+	}
+
 	await prisma.chatMember.delete({
 		where: {
 			userId_chatId: {

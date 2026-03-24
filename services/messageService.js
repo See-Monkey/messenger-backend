@@ -1,35 +1,35 @@
 import { prisma } from "../config/prisma.js";
 
 async function createMessage({ chatId, senderId, content }) {
-	// ensure sender is part of chat
-	const membership = await prisma.chatMember.findUnique({
-		where: {
-			userId_chatId: {
-				userId: senderId,
-				chatId,
+	return prisma.$transaction(async (tx) => {
+		const membership = await tx.chatMember.findUnique({
+			where: {
+				userId_chatId: {
+					userId: senderId,
+					chatId,
+				},
 			},
-		},
+		});
+
+		if (!membership) {
+			throw new Error("Not authorized to send messages in this chat");
+		}
+
+		const message = await tx.message.create({
+			data: {
+				chatId,
+				senderId,
+				content,
+			},
+		});
+
+		await tx.chat.update({
+			where: { id: chatId },
+			data: { updatedAt: new Date() },
+		});
+
+		return message;
 	});
-
-	if (!membership) {
-		throw new Error("Not authorized to send messages in this chat");
-	}
-
-	const message = await prisma.message.create({
-		data: {
-			chatId,
-			senderId,
-			content,
-		},
-	});
-
-	// bump chat updatedAt
-	await prisma.chat.update({
-		where: { id: chatId },
-		data: { updatedAt: new Date() },
-	});
-
-	return message;
 }
 
 async function editMessage({ messageId, userId, content }) {
