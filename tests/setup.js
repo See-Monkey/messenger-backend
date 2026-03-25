@@ -1,10 +1,14 @@
 import { prisma } from "../config/prisma.js";
 
 beforeEach(async () => {
-	// Clean all tables before every test
-	// NEEDS CUSTOMIZED
-	await prisma.post.deleteMany();
-	await prisma.user.deleteMany();
+	await prisma.$executeRawUnsafe(`
+		TRUNCATE TABLE 
+			"Message",
+			"ChatMember",
+			"Chat",
+			"User"
+		RESTART IDENTITY CASCADE;
+	`);
 });
 
 afterAll(async () => {

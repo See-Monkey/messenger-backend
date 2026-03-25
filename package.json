@@ -5,6 +5,8 @@
 	"description": "Express PostgreSQL Passport JWT Prisma REST",
 	"main": "app.js",
 	"scripts": {
+		"test:push": "NODE_ENV=test prisma db push",
+		"test:migrate": "NODE_ENV=test prisma migrate deploy",
 		"test": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
 		"dev": "NODE_ENV=development node --watch server.js",
 		"start": "NODE_ENV=production node server.js",

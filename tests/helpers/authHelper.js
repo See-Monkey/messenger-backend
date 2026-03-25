@@ -1,16 +1,19 @@
 import request from "supertest";
 import app from "../../app.js";
-import { prisma } from "../../config/prisma.js";
 
 // Registers a user.
 // Returns full Supertest response.
 export async function registerUser(overrides = {}) {
+	const unique = Date.now() + Math.random();
+
+	const username = overrides.username || `test${unique}@example.com`;
+
 	const userData = {
-		username: "test@example.com",
+		username,
 		password: "password123",
 		confirmPassword: "password123",
-		firstname: "Test",
-		lastname: "User",
+		displayName: "Test User",
+		themeColor: "#000000",
 		...overrides,
 	};
 
@@ -19,42 +22,29 @@ export async function registerUser(overrides = {}) {
 
 // Logs in a user.
 // Returns full Supertest response.
-export async function loginUser(overrides = {}) {
-	const credentials = {
-		username: "test@example.com",
-		password: "password123",
-		...overrides,
-	};
-
-	return request(app).post("/api/auth/login").send(credentials);
+export async function loginUser({ username, password = "password123" }) {
+	return request(app).post("/api/auth/login").send({ username, password });
 }
 
-// Convenience helper:
 // Registers + logs in
 // Returns { user, token }
 export async function createAuthenticatedUser(overrides = {}) {
-	await registerUser(overrides);
-	const loginRes = await loginUser(overrides);
-	return loginRes.body;
-}
+	const registerRes = await registerUser(overrides);
 
-// Registers a user, promotes them to ADMIN,
-// logs them in, and returns:
-// { user, token }
-export async function createAdminUser(overrides = {}) {
-	const username = overrides.username || "admin@example.com";
+	const username = registerRes.body.user.username;
 
-	// 1. Register normally
-	await registerUser({ username, ...overrides });
-
-	// 2. Promote to admin directly in DB
-	await prisma.user.update({
-		where: { username },
-		data: { role: "ADMIN" },
+	const loginRes = await loginUser({
+		username,
+		password: overrides.password || "password123",
 	});
 
-	// 3. Login
-	const loginRes = await loginUser({ username, ...overrides });
-
 	return loginRes.body; // { user, token }
+}
+
+export async function createUserAndToken(overrides = {}) {
+	const res = await createAuthenticatedUser(overrides);
+	return {
+		user: res.user,
+		token: res.token,
+	};
 }
