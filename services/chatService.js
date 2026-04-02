@@ -24,6 +24,7 @@ async function getUserChats(userId, { cursor, limit = 20 }) {
 							username: true,
 							displayName: true,
 							avatarUrl: true,
+							themeColor: true,
 						},
 					},
 				},
@@ -62,6 +63,7 @@ async function createChat({ currentUserId, userIds = [], name }) {
 							username: true,
 							displayName: true,
 							avatarUrl: true,
+							themeColor: true,
 						},
 					},
 				},
@@ -87,6 +89,7 @@ async function getChatById(chatId, userId, { cursor, limit = 50 } = {}) {
 							username: true,
 							displayName: true,
 							avatarUrl: true,
+							themeColor: true,
 						},
 					},
 				},
@@ -105,7 +108,7 @@ async function getChatById(chatId, userId, { cursor, limit = 50 } = {}) {
 	return chat;
 }
 
-async function editChat({ chatId, name }) {
+async function editChat({ chatId, name, currentUserId }) {
 	const membership = await prisma.chatMember.findUnique({
 		where: {
 			userId_chatId: {

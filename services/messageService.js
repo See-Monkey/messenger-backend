@@ -33,53 +33,67 @@ async function createMessage({ chatId, senderId, content }) {
 }
 
 async function editMessage({ messageId, userId, content }) {
-	const message = await prisma.message.findUnique({
-		where: { id: messageId },
-	});
+	return prisma.$transaction(async (tx) => {
+		const result = await tx.message.updateMany({
+			where: {
+				id: messageId,
+				senderId: userId,
+				deletedAt: null,
+			},
+			data: {
+				content,
+				editedAt: new Date(),
+			},
+		});
 
-	if (!message) {
-		throw new Error("Message not found");
-	}
+		if (result.count === 0) {
+			throw new Error("Not authorized or message not editable");
+		}
 
-	if (message.senderId !== userId) {
-		throw new Error("Not authorized to edit this message");
-	}
+		// get chatId for updating chat timestamp
+		const message = await tx.message.findUnique({
+			where: { id: messageId },
+			select: { chatId: true },
+		});
 
-	if (message.deletedAt) {
-		throw new Error("Cannot edit a deleted message");
-	}
+		await tx.chat.update({
+			where: { id: message.chatId },
+			data: { updatedAt: new Date() },
+		});
 
-	return prisma.message.update({
-		where: { id: messageId },
-		data: {
-			content,
-			editedAt: new Date(),
-		},
+		return message;
 	});
 }
 
 async function deleteMessage({ messageId, userId }) {
-	const message = await prisma.message.findUnique({
-		where: { id: messageId },
+	return prisma.$transaction(async (tx) => {
+		const result = await tx.message.updateMany({
+			where: {
+				id: messageId,
+				senderId: userId,
+				deletedAt: null,
+			},
+			data: {
+				deletedAt: new Date(),
+				content: "",
+			},
+		});
+
+		if (result.count === 0) {
+			throw new Error("Not authorized or message not found");
+		}
+
+		// get chatId for updating chat timestamp
+		const message = await tx.message.findUnique({
+			where: { id: messageId },
+			select: { chatId: true },
+		});
+
+		await tx.chat.update({
+			where: { id: message.chatId },
+			data: { updatedAt: new Date() },
+		});
 	});
-
-	if (!message) {
-		throw new Error("Message not found");
-	}
-
-	if (message.senderId !== userId) {
-		throw new Error("Not authorized to delete this message");
-	}
-
-	await prisma.message.update({
-		where: { id: messageId },
-		data: {
-			deletedAt: new Date(),
-			content: "",
-		},
-	});
-
-	return;
 }
 
 export default {
