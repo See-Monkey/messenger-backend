@@ -36,7 +36,7 @@ async function deleteMe(req, res, next) {
 
 async function searchUsers(req, res, next) {
 	try {
-		const { search } = req.query;
+		const { search, limit } = req.query;
 
 		if (!search || typeof search !== "string") {
 			return res.status(400).json({ message: "Search query is required" });
@@ -45,7 +45,7 @@ async function searchUsers(req, res, next) {
 		const users = await userService.searchUsers({
 			query: search.trim(),
 			currentUserId: req.user.id,
-			limit: 15,
+			limit: limit ? Number(limit) : 15,
 		});
 
 		res.json(users);
