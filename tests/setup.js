@@ -1,7 +1,7 @@
 import { prisma } from "../config/prisma.js";
 
 beforeEach(async () => {
-	await prisma.$executeRawUnsafe(`
+  await prisma.$executeRawUnsafe(`
 		TRUNCATE TABLE 
 			"Message",
 			"ChatMember",
@@ -12,5 +12,5 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-	await prisma.$disconnect();
+  await prisma.$disconnect();
 });
