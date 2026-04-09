@@ -72,6 +72,7 @@ async function editChat(req, res, next) {
     const updatedChat = await chatService.editChat({
       chatId,
       name,
+      currentUserId: req.user.id,
     });
 
     res.json(updatedChat);
