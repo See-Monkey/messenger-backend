@@ -86,4 +86,5 @@ enum MessageType {
 enum SystemType {
   USER_ADDED
   USER_LEFT
+  CHAT_RENAMED
 }

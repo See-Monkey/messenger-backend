@@ -115,23 +115,11 @@ async function getChatById(chatId, userId, { cursor, limit = 50 } = {}) {
     if (msg.type === "SYSTEM" && msg.meta) {
       if (msg.meta.userId) userIds.add(msg.meta.userId);
       if (msg.meta.addedById) userIds.add(msg.meta.addedById);
+      if (msg.meta.changedById) userIds.add(msg.meta.changedById);
     }
   }
 
   // Fetch those users
-  const users = await prisma.user.findMany({
-    where: {
-      id: { in: Array.from(userIds) },
-    },
-    select: {
-      id: true,
-      username: true,
-      displayName: true,
-      avatarUrl: true,
-      themeColor: true,
-    },
-  });
-
   // Create lookup map
   let userMap = new Map();
 
@@ -148,6 +136,8 @@ async function getChatById(chatId, userId, { cursor, limit = 50 } = {}) {
         themeColor: true,
       },
     });
+
+    userMap = new Map(users.map((u) => [u.id, u]));
   }
 
   userMap = new Map(users.map((u) => [u.id, u]));
@@ -163,6 +153,9 @@ async function getChatById(chatId, userId, { cursor, limit = 50 } = {}) {
         user: msg.meta.userId ? userMap.get(msg.meta.userId) || null : null,
         addedBy: msg.meta.addedById
           ? userMap.get(msg.meta.addedById) || null
+          : null,
+        changedBy: msg.meta.changedById
+          ? userMap.get(msg.meta.changedById) || null
           : null,
       },
     };
@@ -193,12 +186,34 @@ async function editChat({ chatId, name, currentUserId }) {
     throw new Error("Chat name cannot be empty");
   }
 
-  const updatedChat = await prisma.chat.update({
+  const oldChat = await prisma.chat.findUnique({
     where: { id: chatId },
-    data: { name },
+    select: { name: true },
   });
 
-  return updatedChat;
+  const updatedChat = await prisma.chat.update({
+    where: { id: chatId },
+    data: {
+      name,
+      updatedAt: new Date(),
+    },
+  });
+
+  if (oldChat?.name === name) {
+    return oldChat;
+  }
+
+  await createSystemMessage({
+    chatId,
+    systemType: "CHAT_RENAMED",
+    meta: {
+      oldName: oldChat?.name,
+      newName: name,
+      changedById: currentUserId,
+    },
+  });
+
+  return getChatById(chatId, currentUserId);
 }
 
 async function addUserToChat({ chatId, currentUserId, userIdToAdd }) {
