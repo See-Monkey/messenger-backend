@@ -1,3 +1,4 @@
+import createSystemMessage from "./messageService.js";
 import { prisma } from "../config/prisma.js";
 
 async function getUserChats(userId, { cursor, limit = 20 }) {
@@ -95,7 +96,7 @@ async function getChatById(chatId, userId, { cursor, limit = 50 } = {}) {
         },
       },
       messages: {
-        orderBy: { createdAt: "desc" }, // newest first
+        orderBy: { createdAt: "desc" },
         take: limit,
         ...(cursor && {
           skip: 1,
@@ -105,7 +106,73 @@ async function getChatById(chatId, userId, { cursor, limit = 50 } = {}) {
     },
   });
 
-  return chat;
+  if (!chat) return null;
+
+  // Collect all userIds from system messages
+  const userIds = new Set();
+
+  for (const msg of chat.messages) {
+    if (msg.type === "SYSTEM" && msg.meta) {
+      if (msg.meta.userId) userIds.add(msg.meta.userId);
+      if (msg.meta.addedById) userIds.add(msg.meta.addedById);
+    }
+  }
+
+  // Fetch those users
+  const users = await prisma.user.findMany({
+    where: {
+      id: { in: Array.from(userIds) },
+    },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      avatarUrl: true,
+      themeColor: true,
+    },
+  });
+
+  // Create lookup map
+  let userMap = new Map();
+
+  if (userIds.size > 0) {
+    const users = await prisma.user.findMany({
+      where: {
+        id: { in: Array.from(userIds) },
+      },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        avatarUrl: true,
+        themeColor: true,
+      },
+    });
+  }
+
+  userMap = new Map(users.map((u) => [u.id, u]));
+
+  // Hydrate messages
+  const hydratedMessages = chat.messages.map((msg) => {
+    if (msg.type !== "SYSTEM" || !msg.meta) return msg;
+
+    return {
+      ...msg,
+      meta: {
+        ...msg.meta,
+        user: msg.meta.userId ? userMap.get(msg.meta.userId) || null : null,
+        addedBy: msg.meta.addedById
+          ? userMap.get(msg.meta.addedById) || null
+          : null,
+      },
+    };
+  });
+
+  // Return hydrated chat
+  return {
+    ...chat,
+    messages: hydratedMessages,
+  };
 }
 
 async function editChat({ chatId, name, currentUserId }) {
@@ -148,21 +215,33 @@ async function addUserToChat({ chatId, currentUserId, userIdToAdd }) {
     throw new Error("Not authorized to modify this chat");
   }
 
-  await prisma.chatMember.upsert({
+  const existing = await prisma.chatMember.findUnique({
     where: {
       userId_chatId: {
         userId: userIdToAdd,
         chatId,
       },
     },
-    update: {},
-    create: {
-      chatId,
-      userId: userIdToAdd,
-    },
   });
 
-  // count members
+  if (!existing) {
+    await prisma.chatMember.create({
+      data: {
+        chatId,
+        userId: userIdToAdd,
+      },
+    });
+
+    await createSystemMessage({
+      chatId,
+      systemType: "USER_ADDED",
+      meta: {
+        userId: userIdToAdd,
+        addedById: currentUserId,
+      },
+    });
+  }
+
   const memberCount = await prisma.chatMember.count({
     where: { chatId },
   });
@@ -178,11 +257,11 @@ async function addUserToChat({ chatId, currentUserId, userIdToAdd }) {
   return getChatById(chatId, currentUserId);
 }
 
-async function removeUserFromChat({ chatId, userId }) {
+async function removeUserFromChat({ chatId, currentUserId, userIdToRemove }) {
   const membership = await prisma.chatMember.findUnique({
     where: {
       userId_chatId: {
-        userId,
+        userId: currentUserId,
         chatId,
       },
     },
@@ -192,10 +271,18 @@ async function removeUserFromChat({ chatId, userId }) {
     throw new Error("Not authorized to modify this chat");
   }
 
+  await createSystemMessage({
+    chatId,
+    systemType: "USER_LEFT",
+    meta: {
+      userId: userIdToRemove,
+    },
+  });
+
   await prisma.chatMember.delete({
     where: {
       userId_chatId: {
-        userId,
+        userId: userIdToRemove,
         chatId,
       },
     },
@@ -212,6 +299,8 @@ async function removeUserFromChat({ chatId, userId }) {
       updatedAt: new Date(),
     },
   });
+
+  return getChatById(chatId, currentUserId);
 }
 
 export default {

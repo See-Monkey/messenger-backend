@@ -65,11 +65,25 @@ model Message {
   sender   User?   @relation("UserMessages", fields: [senderId], references: [id], onDelete: SetNull)
   senderId String?
 
-  content   String
+  content   String?
   createdAt DateTime  @default(now())
   editedAt  DateTime?
   deletedAt DateTime?
 
+  type       MessageType @default(USER)
+  systemType SystemType?
+  meta       Json?
+
   @@index([chatId])
   @@index([senderId])
+}
+
+enum MessageType {
+  USER
+  SYSTEM
+}
+
+enum SystemType {
+  USER_ADDED
+  USER_LEFT
 }

@@ -104,6 +104,7 @@ async function removeMe(req, res, next) {
 
     await chatService.removeUserFromChat({
       chatId,
+      currentUserId: req.user.id,
       userId: req.user.id,
     });
 

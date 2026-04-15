@@ -1,5 +1,16 @@
 import { prisma } from "../config/prisma.js";
 
+async function createSystemMessage({ chatId, systemType, meta = {} }) {
+  return await Message.create({
+    chatId,
+    type: "SYSTEM",
+    systemType,
+    meta,
+    senderId: null,
+    content: null,
+  });
+}
+
 async function createMessage({ chatId, senderId, content }) {
   return prisma.$transaction(async (tx) => {
     const membership = await tx.chatMember.findUnique({
@@ -97,6 +108,7 @@ async function deleteMessage({ messageId, userId }) {
 }
 
 export default {
+  createSystemMessage,
   createMessage,
   editMessage,
   deleteMessage,
