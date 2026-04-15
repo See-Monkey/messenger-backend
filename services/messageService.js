@@ -1,13 +1,15 @@
 import { prisma } from "../config/prisma.js";
 
 async function createSystemMessage({ chatId, systemType, meta = {} }) {
-  return await Message.create({
-    chatId,
-    type: "SYSTEM",
-    systemType,
-    meta,
-    senderId: null,
-    content: null,
+  return prisma.message.create({
+    data: {
+      chatId,
+      type: "SYSTEM",
+      systemType,
+      meta,
+      senderId: null,
+      content: null,
+    },
   });
 }
 

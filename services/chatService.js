@@ -1,5 +1,7 @@
-import createSystemMessage from "./messageService.js";
+import messageService from "./messageService.js";
 import { prisma } from "../config/prisma.js";
+
+const createSystemMessage = messageService.createSystemMessage;
 
 async function getUserChats(userId, { cursor, limit = 20 }) {
   return prisma.chat.findMany({
@@ -139,8 +141,6 @@ async function getChatById(chatId, userId, { cursor, limit = 50 } = {}) {
 
     userMap = new Map(users.map((u) => [u.id, u]));
   }
-
-  userMap = new Map(users.map((u) => [u.id, u]));
 
   // Hydrate messages
   const hydratedMessages = chat.messages.map((msg) => {
