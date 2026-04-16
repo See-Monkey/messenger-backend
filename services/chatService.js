@@ -161,10 +161,16 @@ async function getChatById(chatId, userId, { cursor, limit = 50 } = {}) {
     };
   });
 
+  const nextCursor =
+    chat.messages.length === limit
+      ? chat.messages[chat.messages.length - 1].id
+      : null;
+
   // Return hydrated chat
   return {
     ...chat,
     messages: hydratedMessages,
+    nextCursor,
   };
 }
 
